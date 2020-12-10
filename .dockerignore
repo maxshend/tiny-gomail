@@ -1,0 +1,11 @@
+.git
+.gitignore
+
+Dockerfile
+docker-compose.yml
+
+README.md
+
+.env*
+
+hot_reload_exec
