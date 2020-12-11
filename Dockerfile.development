@@ -24,4 +24,4 @@ COPY . .
 
 RUN ["go", "get", "github.com/githubnemo/CompileDaemon"]
 
-ENTRYPOINT CompileDaemon -log-prefix=false -build="go build -o hot_reload_exec ." -command="./hot_reload_exec"
+ENTRYPOINT CompileDaemon -log-prefix=false -build="go build -o hot_reload_exec ./server" -command="./hot_reload_exec"
