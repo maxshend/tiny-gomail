@@ -16,7 +16,7 @@ message EmailMessage {
   string body = 1;
   string subject = 2;
   string from = 3;
-  string to = 4;
+  repeated string to = 4;
 }
 
 message SendResponse {
