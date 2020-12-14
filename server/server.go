@@ -2,16 +2,23 @@ package main
 
 import (
 	"context"
+	"log"
+	"net"
 	"net/smtp"
 	"os"
+	"sync"
 
 	pb "github.com/maxshend/tiny_gomail/tinygomail"
+	"google.golang.org/grpc"
 )
 
 const htmlMIME = "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\r\n"
+const defaultHost = "localhost"
+const defaultPort = "8000"
 
 type mailServer struct {
 	pb.UnimplementedTinyGomailServer
+	mu sync.Mutex
 }
 
 func (m *mailServer) SendTextMessage(ctx context.Context, em *pb.EmailMessage) (response *pb.SendResponse, err error) {
@@ -34,4 +41,25 @@ func sendSMTPEmail(em *pb.EmailMessage, mime string) (err error) {
 	return
 }
 
-func main() {}
+func main() {
+	port, exists := os.LookupEnv("SERVER_PORT")
+	if !exists {
+		port = defaultPort
+	}
+
+	host, exists := os.LookupEnv("SERVER_HOST")
+	if !exists {
+		host = defaultHost
+	}
+
+	lis, err := net.Listen("tcp", host+":"+port)
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+
+	var opts []grpc.ServerOption
+	grpcServer := grpc.NewServer(opts...)
+
+	pb.RegisterTinyGomailServer(grpcServer, &mailServer{})
+	grpcServer.Serve(lis)
+}
