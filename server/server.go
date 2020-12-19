@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net"
-	"net/smtp"
 	"os"
 	"sync"
 
@@ -12,36 +11,43 @@ import (
 	"google.golang.org/grpc"
 )
 
-const htmlMIME = "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\r\n"
 const defaultHost = "localhost"
 const defaultPort = "8000"
 
 type mailServer struct {
 	pb.UnimplementedTinyGomailServer
-	mu sync.Mutex
+	mu     sync.Mutex
+	sender Sender
 }
 
 func (m *mailServer) SendTextMessage(ctx context.Context, em *pb.EmailMessage) (response *pb.SendResponse, err error) {
-	err = sendSMTPEmail(em, "")
+	response = &pb.SendResponse{Message: ""}
+	err = m.sender.SendTextEmail(em)
+	if err != nil {
+		response.Message = err.Error()
+	}
 
 	return
 }
 
 func (m *mailServer) SendHTMLMessage(ctx context.Context, em *pb.EmailMessage) (response *pb.SendResponse, err error) {
-	err = sendSMTPEmail(em, htmlMIME)
-
-	return
-}
-
-func sendSMTPEmail(em *pb.EmailMessage, mime string) (err error) {
-	msg := []byte("Subject: " + em.Subject + "\r\n" + mime + "\r\n" + em.Body + "\r\n")
-	auth := smtp.PlainAuth("", os.Getenv("SMTP_EMAIL"), os.Getenv("SMTP_PASSWORD"), os.Getenv("SMTP_HOST"))
-	err = smtp.SendMail(os.Getenv("SMTP_HOST")+":"+os.Getenv("SMTP_PORT"), auth, os.Getenv("SMTP_EMAIL"), em.To, msg)
+	response = &pb.SendResponse{Message: ""}
+	err = m.sender.SendHTMLEmail(em)
+	if err != nil {
+		response.Message = err.Error()
+	}
 
 	return
 }
 
 func main() {
+	sender := &SMTPSender{
+		Email:    os.Getenv("SMTP_EMAIL"),
+		Password: os.Getenv("SMTP_PASSWORD"),
+		Host:     os.Getenv("SMTP_HOST"),
+		Port:     os.Getenv("SMTP_PORT"),
+	}
+
 	port, exists := os.LookupEnv("SERVER_PORT")
 	if !exists {
 		port = defaultPort
@@ -60,6 +66,6 @@ func main() {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 
-	pb.RegisterTinyGomailServer(grpcServer, &mailServer{})
+	pb.RegisterTinyGomailServer(grpcServer, &mailServer{sender: sender})
 	grpcServer.Serve(lis)
 }

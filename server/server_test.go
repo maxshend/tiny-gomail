@@ -15,11 +15,12 @@ const maxBufSize = 1048576
 
 var lis *bufconn.Listener
 var ctx = context.Background()
+var sender = &fakeSender{}
 
 func init() {
 	lis = bufconn.Listen(maxBufSize)
 	s := grpc.NewServer()
-	pb.RegisterTinyGomailServer(s, &mailServer{})
+	pb.RegisterTinyGomailServer(s, &mailServer{sender: sender})
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -63,4 +64,19 @@ func TestSendHTMLMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed: %v", err)
 	}
+}
+
+type fakeSender struct {
+	Email    string
+	Password string
+	Host     string
+	Port     string
+}
+
+func (s *fakeSender) SendTextEmail(em *pb.EmailMessage) (err error) {
+	return
+}
+
+func (s *fakeSender) SendHTMLEmail(em *pb.EmailMessage) (err error) {
+	return
 }
