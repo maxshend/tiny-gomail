@@ -41,11 +41,19 @@ func (m *mailServer) SendHTMLMessage(ctx context.Context, em *pb.EmailMessage) (
 }
 
 func main() {
-	sender := &SMTPSender{
-		Email:    os.Getenv("SMTP_EMAIL"),
-		Password: os.Getenv("SMTP_PASSWORD"),
-		Host:     os.Getenv("SMTP_HOST"),
-		Port:     os.Getenv("SMTP_PORT"),
+	var sender Sender
+
+	if email, ok := os.LookupEnv("SMTP_EMAIL"); ok {
+		sender = &SMTPSender{
+			Email:    email,
+			Password: os.Getenv("SMTP_PASSWORD"),
+			Host:     os.Getenv("SMTP_HOST"),
+			Port:     os.Getenv("SMTP_PORT"),
+		}
+	} else if key, ok := os.LookupEnv("SENDGRID_API_KEY"); ok {
+		sender = &SendgridSender{Key: key}
+	} else {
+		log.Fatalf("No available sender")
 	}
 
 	port, exists := os.LookupEnv("SERVER_PORT")
