@@ -3,6 +3,7 @@ package main
 import (
 	"net/smtp"
 
+	"github.com/maxshend/tiny_gomail/logwrapper"
 	pb "github.com/maxshend/tiny_gomail/tinygomail"
 )
 
@@ -12,6 +13,7 @@ type SMTPSender struct {
 	Password string
 	Host     string
 	Port     string
+	Logger   *logwrapper.StandardLogger
 }
 
 // SendTextEmail sends a text email

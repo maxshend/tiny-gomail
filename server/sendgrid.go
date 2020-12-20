@@ -1,8 +1,7 @@
 package main
 
 import (
-	"log"
-
+	"github.com/maxshend/tiny_gomail/logwrapper"
 	pb "github.com/maxshend/tiny_gomail/tinygomail"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -10,7 +9,8 @@ import (
 
 // SendgridSender represents a client for sending emails using Sendrid service
 type SendgridSender struct {
-	Key string
+	Key    string
+	Logger *logwrapper.StandardLogger
 }
 
 // SendTextEmail sends a text email
@@ -37,8 +37,7 @@ func (s *SendgridSender) sendgridEmail(em *pb.EmailMessage, textContent, htmlCon
 
 	client := sendgrid.NewSendClient(s.Key)
 	response, err := client.Send(message)
-
-	log.Println(response)
+	s.Logger.ServiceResponse(response.Body, response.StatusCode)
 
 	return
 }

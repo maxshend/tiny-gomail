@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/maxshend/tiny_gomail/logwrapper"
 	pb "github.com/maxshend/tiny_gomail/tinygomail"
 	"google.golang.org/grpc"
 )
@@ -42,6 +43,7 @@ func (m *mailServer) SendHTMLMessage(ctx context.Context, em *pb.EmailMessage) (
 
 func main() {
 	var sender Sender
+	logger := logwrapper.New()
 
 	if email, ok := os.LookupEnv("SMTP_EMAIL"); ok {
 		sender = &SMTPSender{
@@ -49,9 +51,10 @@ func main() {
 			Password: os.Getenv("SMTP_PASSWORD"),
 			Host:     os.Getenv("SMTP_HOST"),
 			Port:     os.Getenv("SMTP_PORT"),
+			Logger:   logger,
 		}
 	} else if key, ok := os.LookupEnv("SENDGRID_API_KEY"); ok {
-		sender = &SendgridSender{Key: key}
+		sender = &SendgridSender{Key: key, Logger: logger}
 	} else {
 		log.Fatalf("No available sender")
 	}
